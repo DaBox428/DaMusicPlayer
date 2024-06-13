@@ -6,19 +6,28 @@ import {
   Pressable,
   TextInput,
 } from "react-native";
-import { React, useState, useRef } from "react";
+import * as MediaLibrary from "expo-media-library";
+import TrackPlayer from "react-native-track-player";
+import { React, useState, useRef, useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
-import { LinearGradient } from "expo-linear-gradient";
+
 import { wp, hp } from "../helpers/common";
 import Animated, { FadeInUp } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import data from "../assets/data/library.json";
 import ImageGrid from "../components/ImageGrid";
-
 import { useRouter } from "expo-router";
 
 const Home = ({ navigation }) => {
+  getPermission = async () => {
+    const permission = await MediaLibrary.getPermissionsAsync();
+    console.log(permission);
+  };
+
+  useEffect(() => {
+    getPermission();
+  });
   const router = useRouter();
   const { top } = useSafeAreaInsets();
 
@@ -34,59 +43,48 @@ const Home = ({ navigation }) => {
     <View style={{ backgroundColor: "#000000" }}>
       <StatusBar></StatusBar>
       <Animated.View entering={FadeInUp.duration(1300)}>
-        <LinearGradient
-          colors={["rgba(0,0,0,0.77)", "rgba(0,0,0,0.77)"]} //change later
-          style={styles.gradient}
-          start={{ x: 0.5, y: -0.5 }}
-          end={{ x: 0.5, y: 1 }}
-        >
-          <ScrollView>
-            <View style={(styles.container, { paddingTop })}>
-              {/* Header */}
-              <View>
-                <Text style={styles.title}>DaMusicPayer</Text>
-              </View>
-
-              <View>
-                {/* Searchbar */}
-                <View style={styles.searchBar}>
-                  <View style={styles.searchIcon}>
-                    <Feather
-                      name="search"
-                      size={27}
-                      color={"#46d0f2"}
-                    ></Feather>
-                  </View>
-                  <TextInput
-                    placeholder="Search..."
-                    style={styles.searchInput}
-                    onChangeText={(value) => setSearch(value)}
-                    ref={searchInputRef}
-                  />
-                  {search && (
-                    <Pressable style={styles.closeIcon}>
-                      <Feather
-                        name="x"
-                        size={25}
-                        color={"#1f757d"}
-                        /* stroke-width={3} */
-                      ></Feather>
-                    </Pressable>
-                  )}
-                </View>
-              </View>
-            </View>
+        <ScrollView>
+          <View style={(styles.container, { paddingTop })}>
+            {/* Header */}
             <View>
-              {/* Album grid */}
-              {data && (
-                <ImageGrid
-                  albums={data}
-                  handleAlbumClick={handleAlbumClick}
-                ></ImageGrid>
-              )}
+              <Text style={styles.title}>DaMusicPayer</Text>
             </View>
-          </ScrollView>
-        </LinearGradient>
+
+            <View>
+              {/* Searchbar */}
+              <View style={styles.searchBar}>
+                <View style={styles.searchIcon}>
+                  <Feather name="search" size={27} color={"#46d0f2"}></Feather>
+                </View>
+                <TextInput
+                  placeholder="Search..."
+                  style={styles.searchInput}
+                  onChangeText={(value) => setSearch(value)}
+                  ref={searchInputRef}
+                />
+                {search && (
+                  <Pressable style={styles.closeIcon}>
+                    <Feather
+                      name="x"
+                      size={25}
+                      color={"#1f757d"}
+                      /* stroke-width={3} */
+                    ></Feather>
+                  </Pressable>
+                )}
+              </View>
+            </View>
+          </View>
+          <View>
+            {/* Album grid */}
+            {data && (
+              <ImageGrid
+                albums={data}
+                handleAlbumClick={handleAlbumClick}
+              ></ImageGrid>
+            )}
+          </View>
+        </ScrollView>
       </Animated.View>
     </View>
   );
