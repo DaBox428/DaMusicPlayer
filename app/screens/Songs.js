@@ -1,81 +1,227 @@
-import React, { useEffect, useState } from "react";
+import Slider from "@react-native-community/slider";
+import React, { useEffect, useState, createContext } from "react";
 import {
   StyleSheet,
   View,
   Text,
-  ScrollView,
   TouchableHighlight,
+  ScrollView,
 } from "react-native";
+import { Image } from "expo-image";
 import library from "../../assets/data/library.json";
+import Animated, { FadeInUp } from "react-native-reanimated";
 import TrackList from "../../components/TrackList";
 import { wp, hp } from "../../helpers/common";
-import { Audio } from "expo-av";
+import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from "expo-av";
+import { Feather } from "@expo/vector-icons";
+import * as FileSystem from "expo-file-system";
+import millisToMinutes from "../../helpers/millisToMinutes";
 
 const Songs = ({ route }) => {
-  const [sound, setSound] = useState();
+  const [songPlaying, setsongPlaying] = useState(null);
+  const [songPlayingId, setsongPlayingId] = useState(null);
+  const [soundObj, setSoundObj] = useState(null);
+  const [soundStatus, setsoundStatus] = useState(null);
+
+  const [positionMilis, setPositionMillis] = useState(null);
+
+  const [playbackInstanceDuration, setPlaybackInstanceDuration] =
+    useState(null);
+
   const [isPlaying, setIsPlaying] = useState(false);
+  const albumID = route.params["album"];
 
   const playlist = [
     {
-      name: "Comfort Fit - “Sorry”",
-      uri: require("../../assets/files/katanaZero/KatanaZero(Ost-Version).mp3"),
+      id: 0,
+      name: "Bill Kiley-Sneaky Driver",
+      uri: require("../../assets/files/katanaZero/SneakyDriver.mp3"),
     },
     {
-      name: "Big Buck Bunny",
-      uri: "https://ia800304.us.archive.org/34/items/PaulWhitemanwithMildredBailey/PaulWhitemanwithMildredBailey-AllofMe.mp3",
+      id: 1,
+      name: "LudoWic - Third District",
+      uri: require("../../assets/files/katanaZero/level.mp3"),
     },
   ];
 
-  const onPlayPausePressed = async () => {
-    console.log("Loading Sound");
-    console.log(playlist[0].uri);
-    const { sound } = await Audio.Sound.createAsync(playlist[0].uri, {
-      shouldPlay: true,
-    });
+  const setUpAlbumPlaylist = async (index, playing) => {
+    if (soundObj != null) {
+      await soundObj.unloadAsync();
+    }
 
-    console.log(sound);
+    const { sound, status } = await Audio.Sound.createAsync(
+      playlist[index].uri,
+      {
+        shouldPlay: playing,
+      }
+    );
+    sound.setOnPlaybackStatusUpdate(onPlaybackStatusUpdate);
 
-    await sound.playAsync();
+    setSoundObj(sound);
+    setsoundStatus(status);
+
+    setIsPlaying(false);
   };
-  const albumID = route.params["album"];
+
+  const getNextSong = (songPlaying, songPlayingId) => {
+    //get the index of the next song, if is final the playback should pause
+  };
+
+  const onPlaybackStatusUpdate = async (playbackStatus) => {
+    if (playbackStatus.didJustFinish) {
+      getNextSong(songPlaying, songPlayingId);
+
+      setUpAlbumPlaylist(0, true);
+    }
+
+    if (playbackStatus.isLoaded) {
+      setPlaybackInstanceDuration(playbackStatus.durationMillis);
+      setPositionMillis(playbackStatus.positionMillis);
+    }
+  };
 
   let albumObj = library.find((o) => o.id === albumID);
 
   useEffect(() => {
+    setUpAlbumPlaylist(0, false);
     Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-      staysActiveInBackground: false,
+      staysActiveInBackground: true,
+      playsInSilentModeIOS: true,
+      interruptionModeIOS: InterruptionModeIOS.DuckOthers,
+      interruptionModeAndroid: InterruptionModeAndroid.DuckOthers,
       shouldDuckAndroid: true,
-      playThroughEarpieceAndroid: false,
+      playThroughEarpieceAndroid: true,
     });
   }, []);
 
+  useEffect(() => {}, [songPlaying]);
+
+  const onPressedTrack = async (track, trackId) => {
+    if (track == songPlaying) {
+      if (isPlaying) {
+        console.log("pausing");
+        soundObj.pauseAsync();
+        setIsPlaying(false);
+      } else {
+        console.log("playing again");
+        setsongPlaying(track);
+        setsongPlayingId(trackId);
+        soundObj.playAsync();
+        setIsPlaying(true);
+      }
+    } else {
+      setIsPlaying(true);
+      setsongPlaying(track);
+      setsongPlayingId(trackId);
+      setUpAlbumPlaylist(trackId, true);
+    }
+  };
+
+  const onPlayPausePressed = async () => {
+    if (isPlaying) {
+      await soundObj.pauseAsync();
+      setIsPlaying(!isPlaying);
+    } else {
+      await soundObj.playAsync();
+      setsongPlaying(playlist[0].name);
+      setIsPlaying(!isPlaying);
+    }
+  };
+
   return (
-    <ScrollView style={styles.scroll}>
+    <ScrollView style={{ backgroundColor: "#000000" }}>
       <View style={styles.AlbumDetails}>
-        <View>
-          <TouchableHighlight onPress={onPlayPausePressed}>
-            <Text>Play</Text>
-          </TouchableHighlight>
+        <Animated.View>
+          <Image
+            style={styles.image}
+            source={albumObj.artwork}
+            transition={1000}
+          />
+        </Animated.View>
+        <Text style={styles.title}>{albumObj.title}</Text>
+        <Text style={styles.author}>{albumObj.artists}</Text>
+      </View>
+
+      <View>
+        <Slider
+          style={{ width: wp(90), height: 40, marginHorizontal: wp(4) }}
+          minimumValue={0}
+          value={positionMilis}
+          maximumValue={playbackInstanceDuration}
+          minimumTrackTintColor="#FFFFFF"
+          maximumTrackTintColor="#rgba(255,255,255,0.9)"
+          thumbTintColor={"#429ad5"}
+        />
+        <View style={styles.minutesCounter}>
+          <Text style={{ color: "#ffffff" }}>
+            {millisToMinutes(positionMilis)}
+          </Text>
+          <Text style={{ color: "#ffffff" }}>
+            {millisToMinutes(playbackInstanceDuration)}
+          </Text>
         </View>
       </View>
-      <View>
-        <TrackList album={albumObj.tracks}></TrackList>
+      <View style={styles.PlayButtons}>
+        <TouchableHighlight onPress={onPlayPausePressed}>
+          <Feather name="chevrons-left" size={30} color={"#46d0f2"}></Feather>
+        </TouchableHighlight>
+        <TouchableHighlight onPress={onPlayPausePressed}>
+          <Feather
+            name={isPlaying ? "pause-circle" : "play-circle"}
+            size={50}
+            color={"#46d0f2"}
+          ></Feather>
+        </TouchableHighlight>
+        <TouchableHighlight onPress={onPlayPausePressed}>
+          <Feather name="chevrons-right" size={30} color={"#46d0f2"}></Feather>
+        </TouchableHighlight>
       </View>
+
+      <TrackList
+        album={albumObj.tracks}
+        onPressedTrack={onPressedTrack}
+        currentSongPlaying={songPlaying}
+      ></TrackList>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   AlbumDetails: {
-    marginTop: hp(15),
-    marginHorizontal: wp(4),
-    flexDirection: "row",
+    marginTop: hp(10),
+    flexDirection: "column",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  scroll: {
-    marginHorizontal: wp(4),
+
+  image: {
+    height: hp(40),
+    width: wp(80),
+    borderRadius: 10,
+  },
+
+  title: {
+    color: "#ffffff",
+    marginVertical: wp(3),
+    fontSize: 20,
+  },
+  author: {
+    color: "rgba(255,255,255,0.6)",
+  },
+
+  minutesCounter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+
+    marginHorizontal: wp(8),
+  },
+
+  PlayButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginVertical: wp(5),
+    marginHorizontal: wp(30),
   },
 });
 

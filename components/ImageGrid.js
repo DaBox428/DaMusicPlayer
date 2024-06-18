@@ -18,6 +18,8 @@ const ImageGrid = ({ albums, handleAlbumClick }) => {
 const styles = StyleSheet.create({
   ImageGrid: {
     color: "#ffffff",
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 

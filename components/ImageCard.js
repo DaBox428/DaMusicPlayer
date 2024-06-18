@@ -27,7 +27,7 @@ const styles = StyleSheet.create({
     width: 180,
     height: "100%",
     borderRadius: 10,
-    marginHorizontal: wp(4),
+    marginHorizontal: wp(2),
     marginVertical: wp(2),
   },
   title: {

@@ -20,14 +20,6 @@ import ImageGrid from "../components/ImageGrid";
 import { useRouter } from "expo-router";
 
 const Home = ({ navigation }) => {
-  getPermission = async () => {
-    const permission = await MediaLibrary.getPermissionsAsync();
-    console.log(permission);
-  };
-
-  useEffect(() => {
-    getPermission();
-  });
   const router = useRouter();
   const { top } = useSafeAreaInsets();
 
@@ -67,7 +59,7 @@ const Home = ({ navigation }) => {
                     <Feather
                       name="x"
                       size={25}
-                      color={"#1f757d"}
+                      color={"#ffff"}
                       /* stroke-width={3} */
                     ></Feather>
                   </Pressable>
@@ -91,7 +83,6 @@ const Home = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  gradient: { width: wp(100), height: hp(100), bottom: 0 },
   container: {
     flex: 1,
     gap: 15,
@@ -115,8 +106,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ffff66",
+    borderWidth: 3,
+    borderColor: "#1c5360",
     backgroundColor: "#FFFFFF",
     marginBottom: wp(5),
     borderRadius: 32,
