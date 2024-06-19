@@ -8,7 +8,7 @@ import {
   ScrollView,
 } from "react-native";
 import { Image } from "expo-image";
-import library from "../../assets/data/library.json";
+import library from "../../assets/data/library";
 import Animated, { FadeInUp } from "react-native-reanimated";
 import TrackList from "../../components/TrackList";
 import { wp, hp } from "../../helpers/common";
@@ -30,19 +30,7 @@ const Songs = ({ route }) => {
 
   const [isPlaying, setIsPlaying] = useState(false);
   const albumID = route.params["album"];
-
-  const playlist = [
-    {
-      id: 0,
-      name: "Bill Kiley-Sneaky Driver",
-      uri: require("../../assets/files/katanaZero/SneakyDriver.mp3"),
-    },
-    {
-      id: 1,
-      name: "LudoWic - Third District",
-      uri: require("../../assets/files/katanaZero/level.mp3"),
-    },
-  ];
+  let albumObj = library.find((o) => o.id === albumID);
 
   const setUpAlbumPlaylist = async (index, playing) => {
     if (soundObj != null) {
@@ -50,7 +38,7 @@ const Songs = ({ route }) => {
     }
 
     const { sound, status } = await Audio.Sound.createAsync(
-      playlist[index].uri,
+      albumObj.tracks[index].uri,
       {
         shouldPlay: playing,
       }
@@ -68,6 +56,7 @@ const Songs = ({ route }) => {
   };
 
   const onPlaybackStatusUpdate = async (playbackStatus) => {
+    setIsPlaying(playbackStatus.isPlaying);
     if (playbackStatus.didJustFinish) {
       getNextSong(songPlaying, songPlayingId);
 
@@ -80,9 +69,8 @@ const Songs = ({ route }) => {
     }
   };
 
-  let albumObj = library.find((o) => o.id === albumID);
-
   useEffect(() => {
+    console.log("use effect triggered");
     setUpAlbumPlaylist(0, false);
     Audio.setAudioModeAsync({
       staysActiveInBackground: true,
@@ -94,22 +82,23 @@ const Songs = ({ route }) => {
     });
   }, []);
 
-  useEffect(() => {}, [songPlaying]);
-
   const onPressedTrack = async (track, trackId) => {
+    if (soundObj == null) {
+      console.log("soundObj es null");
+    }
     if (track == songPlaying) {
-      if (isPlaying) {
-        console.log("pausing");
+      console.log("same song clicked, should pause,", soundStatus.isPlaying);
+      if (soundStatus.isPlaying) {
         soundObj.pauseAsync();
         setIsPlaying(false);
       } else {
-        console.log("playing again");
         setsongPlaying(track);
         setsongPlayingId(trackId);
         soundObj.playAsync();
         setIsPlaying(true);
       }
     } else {
+      console.log("clicked other song: ", soundStatus.isPlaying);
       setIsPlaying(true);
       setsongPlaying(track);
       setsongPlayingId(trackId);
@@ -123,7 +112,7 @@ const Songs = ({ route }) => {
       setIsPlaying(!isPlaying);
     } else {
       await soundObj.playAsync();
-      setsongPlaying(playlist[0].name);
+      setsongPlaying(albumObj.tracks[0].name);
       setIsPlaying(!isPlaying);
     }
   };

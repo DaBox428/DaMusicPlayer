@@ -15,7 +15,7 @@ import { wp, hp } from "../helpers/common";
 import Animated, { FadeInUp } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import data from "../assets/data/library.json";
+import data from "../assets/data/library.js";
 import ImageGrid from "../components/ImageGrid";
 import { useRouter } from "expo-router";
 
