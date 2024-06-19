@@ -19,7 +19,7 @@ import millisToMinutes from "../../helpers/millisToMinutes";
 
 const Songs = ({ route }) => {
   const [songPlaying, setsongPlaying] = useState(null);
-  const [songPlayingId, setsongPlayingId] = useState(null);
+  const [songPlayingId, setsongPlayingId] = useState(0);
   const [soundObj, setSoundObj] = useState(null);
   const [soundStatus, setsoundStatus] = useState(null);
 
@@ -32,35 +32,11 @@ const Songs = ({ route }) => {
   const albumID = route.params["album"];
   let albumObj = library.find((o) => o.id === albumID);
 
-  const setUpAlbumPlaylist = async (index, playing) => {
-    if (soundObj != null) {
-      await soundObj.unloadAsync();
-    }
-
-    const { sound, status } = await Audio.Sound.createAsync(
-      albumObj.tracks[index].uri,
-      {
-        shouldPlay: playing,
-      }
-    );
-    sound.setOnPlaybackStatusUpdate(onPlaybackStatusUpdate);
-
-    setSoundObj(sound);
-    setsoundStatus(status);
-
-    setIsPlaying(false);
-  };
-
-  const getNextSong = (songPlaying, songPlayingId) => {
-    //get the index of the next song, if is final the playback should pause
-  };
-
   const onPlaybackStatusUpdate = async (playbackStatus) => {
+    console.log("just finished statuing updating, ", playbackStatus);
     setIsPlaying(playbackStatus.isPlaying);
     if (playbackStatus.didJustFinish) {
-      getNextSong(songPlaying, songPlayingId);
-
-      setUpAlbumPlaylist(0, true);
+      getNextSong();
     }
 
     if (playbackStatus.isLoaded) {
@@ -69,51 +45,97 @@ const Songs = ({ route }) => {
     }
   };
 
+  const getNextSong = async () => {
+    const playlistLenght = albumObj.tracks.length;
+
+    if (soundObj == null) {
+      if (playlistLenght == songPlayingId) {
+      } else {
+        console.log(
+          "changing song to nextone, ",
+          albumObj.tracks[+songPlayingId + 1].name
+        );
+
+        const playbackObj = new Audio.Sound();
+
+        playbackObj.setOnPlaybackStatusUpdate(onPlaybackStatusUpdate);
+        setSoundObj(playbackObj);
+
+        const status = await playbackObj.loadAsync(
+          albumObj.tracks[+songPlayingId + 1].uri,
+          {
+            shouldPlay: true,
+          }
+        );
+        setsongPlaying(albumObj.tracks[+songPlayingId + 1].name);
+        setsongPlayingId(songPlayingId);
+        setIsPlaying(true);
+        setsoundStatus(status);
+      }
+    }
+  };
+
   useEffect(() => {
     console.log("use effect triggered");
-    setUpAlbumPlaylist(0, false);
-    Audio.setAudioModeAsync({
-      staysActiveInBackground: true,
-      playsInSilentModeIOS: true,
-      interruptionModeIOS: InterruptionModeIOS.DuckOthers,
-      interruptionModeAndroid: InterruptionModeAndroid.DuckOthers,
-      shouldDuckAndroid: true,
-      playThroughEarpieceAndroid: true,
-    });
+    const playbackObj = new Audio.Sound();
+
+    playbackObj.setOnPlaybackStatusUpdate(onPlaybackStatusUpdate);
+    setSoundObj(playbackObj);
+
+    return () => {
+      setIsPlaying(false);
+      soundObj.unloadAsync();
+    };
   }, []);
 
   const onPressedTrack = async (track, trackId) => {
-    if (soundObj == null) {
-      console.log("soundObj es null");
-    }
-    if (track == songPlaying) {
-      console.log("same song clicked, should pause,", soundStatus.isPlaying);
-      if (soundStatus.isPlaying) {
-        soundObj.pauseAsync();
-        setIsPlaying(false);
+    if (soundStatus != null) {
+      if (track === songPlaying) {
+        if (soundStatus.isPlaying) {
+          const status = soundObj.setStatusAsync({ shouldPlay: !isPlaying });
+          setsoundStatus(status);
+          setIsPlaying(!isPlaying);
+        } else {
+        }
       } else {
+        soundObj.unloadAsync();
+        const status = soundObj.loadAsync(albumObj.tracks[trackId].uri, {
+          shouldPlay: true,
+        });
+        setsoundStatus(status);
         setsongPlaying(track);
         setsongPlayingId(trackId);
-        soundObj.playAsync();
         setIsPlaying(true);
       }
     } else {
-      console.log("clicked other song: ", soundStatus.isPlaying);
+      const playerStatus = await soundObj.loadAsync(
+        albumObj.tracks[trackId].uri,
+        {
+          shouldPlay: true,
+        }
+      );
+
+      setsoundStatus(() => playerStatus);
       setIsPlaying(true);
-      setsongPlaying(track);
-      setsongPlayingId(trackId);
-      setUpAlbumPlaylist(trackId, true);
+      setsongPlaying(() => track);
+      setsongPlayingId(() => trackId);
+      console.log("arranca aca", soundObj, " ", soundStatus);
     }
   };
 
   const onPlayPausePressed = async () => {
-    if (isPlaying) {
-      await soundObj.pauseAsync();
+    if (soundStatus != null) {
+      const status = soundObj.setStatusAsync({ shouldPlay: !isPlaying });
+      setsoundStatus(status);
       setIsPlaying(!isPlaying);
     } else {
-      await soundObj.playAsync();
+      const playerStatus = await soundObj.loadAsync(albumObj.tracks[0].uri, {
+        shouldPlay: true,
+      });
+      setsoundStatus(playerStatus);
+      setIsPlaying(true);
       setsongPlaying(albumObj.tracks[0].name);
-      setIsPlaying(!isPlaying);
+      setsongPlayingId(albumObj.tracks[0].id);
     }
   };
 

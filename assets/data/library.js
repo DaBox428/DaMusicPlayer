@@ -77,7 +77,11 @@ const library = [
         name: "Bill Kiley-Sneaky Driver",
         uri: require("../files/katanaZero/05_StageA.mp3"),
       },
-      { id: 1, name: "LudoWic - Third District" },
+      {
+        id: 1,
+        name: "LudoWic - Third District",
+        uri: require("../files/katanaZero/level.mp3"),
+      },
       { id: 2, name: "LudoWic - Disturbed Lines" },
       { id: 3, name: "Bill Kiley - You Will Never Know" },
       { id: 4, name: "LudoWic - Overdose" },
