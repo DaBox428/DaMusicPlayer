@@ -19,7 +19,8 @@ import millisToMinutes from "../../helpers/millisToMinutes";
 
 const Songs = ({ route }) => {
   const [songPlaying, setsongPlaying] = useState(null);
-  const [songPlayingId, setsongPlayingId] = useState(0);
+
+  let songPlayingId = 0;
   const [soundObj, setSoundObj] = useState(null);
   const [soundStatus, setsoundStatus] = useState(null);
 
@@ -33,7 +34,6 @@ const Songs = ({ route }) => {
   let albumObj = library.find((o) => o.id === albumID);
 
   const onPlaybackStatusUpdate = async (playbackStatus) => {
-    console.log("just finished statuing updating, ", playbackStatus);
     setIsPlaying(playbackStatus.isPlaying);
     if (playbackStatus.didJustFinish) {
       getNextSong();
@@ -49,26 +49,26 @@ const Songs = ({ route }) => {
     const playlistLenght = albumObj.tracks.length;
 
     if (soundObj == null) {
-      if (playlistLenght == songPlayingId) {
+      console.log(playlistLenght, " ", songPlayingId);
+      if (playlistLenght == songPlayingId + 1) {
+        console.log("finished playlist");
       } else {
-        console.log(
-          "changing song to nextone, ",
-          albumObj.tracks[+songPlayingId + 1].name
-        );
-
         const playbackObj = new Audio.Sound();
 
         playbackObj.setOnPlaybackStatusUpdate(onPlaybackStatusUpdate);
         setSoundObj(playbackObj);
+        songPlayingId = songPlayingId + 1;
 
         const status = await playbackObj.loadAsync(
-          albumObj.tracks[+songPlayingId + 1].uri,
+          albumObj.tracks[+songPlayingId].uri,
           {
             shouldPlay: true,
           }
         );
-        setsongPlaying(albumObj.tracks[+songPlayingId + 1].name);
-        setsongPlayingId(songPlayingId);
+
+        console.log(songPlayingId);
+        setsongPlaying(() => albumObj.tracks[songPlayingId].name);
+
         setIsPlaying(true);
         setsoundStatus(status);
       }
@@ -76,7 +76,6 @@ const Songs = ({ route }) => {
   };
 
   useEffect(() => {
-    console.log("use effect triggered");
     const playbackObj = new Audio.Sound();
 
     playbackObj.setOnPlaybackStatusUpdate(onPlaybackStatusUpdate);
@@ -84,7 +83,8 @@ const Songs = ({ route }) => {
 
     return () => {
       setIsPlaying(false);
-      soundObj.unloadAsync();
+
+      playbackObj.unloadAsync();
     };
   }, []);
 
@@ -95,6 +95,7 @@ const Songs = ({ route }) => {
           const status = soundObj.setStatusAsync({ shouldPlay: !isPlaying });
           setsoundStatus(status);
           setIsPlaying(!isPlaying);
+          songPlayingId = trackId;
         } else {
         }
       } else {
@@ -104,7 +105,7 @@ const Songs = ({ route }) => {
         });
         setsoundStatus(status);
         setsongPlaying(track);
-        setsongPlayingId(trackId);
+        songPlayingId = trackId;
         setIsPlaying(true);
       }
     } else {
@@ -115,11 +116,9 @@ const Songs = ({ route }) => {
         }
       );
 
-      setsoundStatus(() => playerStatus);
+      setsoundStatus(playerStatus);
       setIsPlaying(true);
-      setsongPlaying(() => track);
-      setsongPlayingId(() => trackId);
-      console.log("arranca aca", soundObj, " ", soundStatus);
+      setsongPlaying(track);
     }
   };
 
@@ -135,7 +134,6 @@ const Songs = ({ route }) => {
       setsoundStatus(playerStatus);
       setIsPlaying(true);
       setsongPlaying(albumObj.tracks[0].name);
-      setsongPlayingId(albumObj.tracks[0].id);
     }
   };
 
