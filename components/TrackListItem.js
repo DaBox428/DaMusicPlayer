@@ -27,7 +27,7 @@ const TrackListItem = ({ track, onPressedTrack, currentSongPlaying }) => {
       onPress={() => onPressedTrack(track.item.name, track.item.id)}
     >
       <Text style={styles.SongText}>
-        {track.item.id} - {track.item.name}
+        {track.item.id + 1} - {track.item.name}
       </Text>
     </TouchableHighlight>
   );
