@@ -1,3 +1,7 @@
-# Welcome to your Expo app 👋
+Music player app, reads image and album from mp3 files, used as kiosk in android phone.
 
-This is the new readme
+Using ReacNative and ExpoAV
+
+![main](https://imgur.com/bOrFAxa)
+
+![album](https://imgur.com/PX2cSwM)
